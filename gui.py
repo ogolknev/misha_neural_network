@@ -14,7 +14,8 @@ def main(page: ft.Page):
         layer.save()
 
     def nn_load(e: ft.FilePickerResultEvent, layer=layer):
-        layer.load(e.files[0].path)
+        if e.files[0]:
+            layer.load(e.files[0].path)
 
 
     def grid_decode():
