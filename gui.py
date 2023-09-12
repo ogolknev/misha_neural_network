@@ -14,7 +14,7 @@ def main(page: ft.Page):
         layer.save()
 
     def nn_load(e: ft.FilePickerResultEvent, layer=layer):
-        if e.files[0]:
+        if e.files:
             layer.load(e.files[0].path)
 
 
@@ -31,7 +31,11 @@ def main(page: ft.Page):
 
     def d_learn(e, layer=layer):
         print(nn.out_encode(int(e.control.value), layer.neurons_num))
-        if nn.p_learning(layer, (grid_decode(), nn.out_encode(int(e.control.value), layer.neurons_num)), 0.01) > 0:
+        input = list()
+        input.append(grid_decode())
+        output_ = list()
+        output_.append(nn.out_encode(int(e.control.value), layer.neurons_num))
+        if nn.learning(layer, (input, output_), 0.01) > 0:
             page.snack_bar = ft.SnackBar(ft.Text(f"Ответ учтен"))
             page.snack_bar.open = True
             page.update()
