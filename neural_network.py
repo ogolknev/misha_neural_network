@@ -31,6 +31,7 @@ class Neuron:
     
 class Layer():
     def __init__(self, neurons_num = None, synapses_num = None, *neurons: Neuron) -> None:
+        self.learned = list()
         if neurons:
             self.neurons = neurons
             self.neurons_num = len(neurons)
@@ -69,17 +70,18 @@ class Layer():
 def learning(layer:Layer, training_sample: list, n):
     switch = True
     counter = 0
+    layer.learned = training_sample
+    print(len(layer.learned[0]), len(layer.learned[1]))
     while switch:
         counter += 1;
         counter_ = 0;
         for i in range(layer.neurons_num):
-            for j in range(len(training_sample[0])):
-                for k in range(len(training_sample[0][j])):
-                    counter_ += layer.neurons[i].learning(training_sample[0][j][k], training_sample[1][k][i], n)
+            for j in range(len(layer.learned[0])):
+                counter_ += layer.neurons[i].learning(layer.learned[0][j], layer.learned[1][j][i], n)
         print(counter_)
-        print(len(training_sample[0]) * len(training_sample[1][0]) * len(training_sample[0][0]))
+        print(len(layer.learned[0]) * len(layer.learned[1][0]))
         print()
-        if counter_ == len(training_sample[0]) * len(training_sample[1][0]) * len(training_sample[0][0]):
+        if counter_ == len(layer.learned[0]) * len(layer.learned[1][0]):
             switch = False
     return counter
 

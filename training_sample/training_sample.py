@@ -15,21 +15,22 @@ def ts_init(path:str):
     input_folder = Path(path + '/input')
     ts = list()
     input_bin_img = list()
-    for i in range(len(list(input_folder.iterdir()))):
-        set_folder = Path(path + f'/input/set{i}')
-        input_bin_img.append(list())
-        for j in range(len(list(set_folder.iterdir()))):
-            input_bin_img[i].append(img_cnvrt(path + f'/input/set{i}/{j}.png'))
-    ts.append(input_bin_img)
     out_f = open(path + '/output.txt')
     out_v = list()
+    out_v_ = list()
     while 1:
         line = out_f.readline()
         if line:
             out_v.append(list((int(x) for x in line[:-1])))
         else:
             break
-    ts.append(out_v)
+    for i in range(len(list(input_folder.iterdir()))):
+        set_folder = Path(path + f'/input/set{i}')
+        for j in range(len(list(set_folder.iterdir()))):
+            input_bin_img.append(img_cnvrt(path + f'/input/set{i}/{j}.png'))
+        out_v_ += out_v
+    ts.append(input_bin_img)
+    ts.append(out_v_)
     return ts
 
 def test():
