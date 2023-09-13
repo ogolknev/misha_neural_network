@@ -1,3 +1,3 @@
 import gui
 
-gui.main()
+gui.__file__
