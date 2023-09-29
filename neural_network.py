@@ -86,6 +86,7 @@ def learning(layer:Layer, training_sample: list, n):
         print()
         if counter_ == len(layer.learned[0]) * len(layer.learned[1][0]):
             switch = False
+    print(counter)
     return counter
 
 

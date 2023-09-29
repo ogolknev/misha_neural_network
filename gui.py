@@ -1,6 +1,9 @@
 import flet as ft
 import neural_network as nn
 from training_sample import training_sample as ts
+from pynput import mouse
+
+mclick = None
 
 def main(page: ft.Page):
     
@@ -9,6 +12,46 @@ def main(page: ft.Page):
     layer = nn.Layer()
 
     # FUNCTIONS DEFENITIONS
+
+    def on_click(x, y, button, pressed):
+        global mclick
+        if pressed:
+            if button == mouse.Button.left:
+                mclick = 'left'
+            elif button == mouse.Button.right:
+                mclick = 'right'
+        else:
+            mclick = None
+        print(mclick)
+
+
+    listener = mouse.Listener(on_click=on_click)
+    listener.start()
+
+    def nn_grid_viewer(e):
+        page.update()
+        if grid_draw_h.value and grid_draw_w.value:
+            grid_draw_draw_column.clean()
+            max_weight = max(layer.neurons[int(answer_txtfield.value)].weight)
+            min_weight = min(layer.neurons[int(answer_txtfield.value)].weight)
+            neuron_num = int(answer_txtfield.value)
+            print(neuron_num)
+            step = ((max_weight - min_weight) / 255)
+            for i in range(int(grid_draw_h.value)):
+                grid_draw_draw_column.controls.append(ft.Row(spacing=0))
+                for j in range(int(grid_draw_w.value)):
+                    
+                    weight_num = int(grid_draw_w.value) * i + j
+                    print(weight_num)
+                    color = f'#{"%x" % int(-(min_weight - layer.neurons[neuron_num].weight[weight_num]) / step)}' + '000000'
+                    print(color)
+                    grid_draw_draw_column.controls[i].controls.append(ft.Container(margin=ft.margin.all(0),
+                                                                                 width=250 / max(int(grid_draw_w.value), int(grid_draw_h.value)), 
+                                                                                 height=250 / max(int(grid_draw_w.value), int(grid_draw_h.value)),
+                                                                                 bgcolor=color,
+                                                                                 ))
+        page.update()
+
 
     def nn_save(e, layer=layer):
         layer.save()
@@ -20,16 +63,16 @@ def main(page: ft.Page):
 
     def grid_decode():
         input = list()
-        if grid_dr_h.value and grid_dr_w.value:
-            for i in range(len(grid_dr_main_column.controls)):
-                for j in range(len(grid_dr_main_column.controls[0].controls)):
-                    if grid_dr_main_column.controls[i].controls[j].bgcolor == 'Black':
+        if grid_draw_h.value and grid_draw_w.value:
+            for i in range(len(grid_draw_draw_column.controls)):
+                for j in range(len(grid_draw_draw_column.controls[0].controls)):
+                    if grid_draw_draw_column.controls[i].controls[j].bgcolor == 'Black':
                         input.append(0)
                     else:
                         input.append(1)
         return input
 
-    def d_learn(e, layer=layer):
+    def add_learning(e, layer=layer):
         print(nn.out_encode(int(e.control.value), layer.neurons_num))
         input = list()
         input.append(grid_decode())
@@ -45,32 +88,35 @@ def main(page: ft.Page):
         out = layer.activate(input)
         out_num = 0
         out_num = nn.out_decode(out)
-        grid_dr_txtf_column.controls[3].value = f'{out_num}'
+        grid_draw_control_column.controls[3].value = f'{out_num}'
         page.update()
         print(out_num)
 
 
-    def paint_r(e):
-        if e.control.bgcolor == 'Black':
-            e.control.bgcolor = 'White'
-        else:
-            e.control.bgcolor = 'Black'
-        page.update()
+    def paint_grid(e):
+        if mclick:
+            if mclick == 'left':
+                e.control.bgcolor = 'Black'
+            elif mclick == 'right':
+                e.control.bgcolor = 'White'
+            grid_draw_draw_column.controls[e.control.data].update()
 
-    def dr_field(e):
+
+    def draw_canvas(e):
         page.update()
-        if grid_dr_h.value and grid_dr_w.value:
-            print('Ya')
-            grid_dr_main_column.clean()
-            for i in range(int(grid_dr_h.value)):
-                grid_dr_main_column.controls.append(ft.Row(spacing=0))
-                for j in range(int(grid_dr_w.value)):
-                    grid_dr_main_column.controls[i].controls.append(ft.Container(margin=ft.margin.all(0),
-                                                                                 width=30, 
-                                                                                 height=30, 
+        if grid_draw_h.value and grid_draw_w.value:
+            grid_draw_draw_column.clean()
+            for i in range(int(grid_draw_h.value)):
+                grid_draw_draw_column.controls.append(ft.Row(spacing=0))
+                for _ in range(int(grid_draw_w.value)):
+                    grid_draw_draw_column.controls[i].controls.append(ft.Container(margin=ft.margin.all(0),
+                                                                                 width=250 / max(int(grid_draw_w.value), int(grid_draw_h.value)), 
+                                                                                 height=250 / max(int(grid_draw_w.value), int(grid_draw_h.value)), 
                                                                                  bgcolor='White',
-                                                                                 border=ft.border.all(0.5, 'Black'),
-                                                                                 on_click=paint_r
+                                                                                 border=ft.border.all(0.05, 'Black'),
+                                                                                 on_hover=paint_grid,
+                                                                                 on_click=paint_grid,
+                                                                                 data=i
                                                                                  ))
         page.update()
 
@@ -84,25 +130,27 @@ def main(page: ft.Page):
             layer.__init__(int(nrns_num.value), int(inputs_num.value))
         page.update()
 
-        grid_dr_txtf_column.controls.append(grid_dr_w)
-        grid_dr_txtf_column.controls.append(grid_dr_h)
-        grid_dr_txtf_column.controls.append(ft.IconButton(ft.icons.PLAY_CIRCLE_FILL_OUTLINED, on_click=activate))
-        grid_dr_txtf_column.controls.append(ft.TextField(label='Answer', width=75, label_style=ft.TextStyle(size=13), on_submit=d_learn))
+        grid_draw_control_column.controls.append(grid_draw_w)
+        grid_draw_control_column.controls.append(grid_draw_h)
+        grid_draw_control_column.controls.append(ft.Row((ft.IconButton(ft.icons.PLAY_CIRCLE_FILL_OUTLINED, on_click=activate),
+                                                         ft.IconButton(ft.icons.REMOVE_RED_EYE_OUTLINED, on_click=nn_grid_viewer))
+                                                        ))
+        grid_draw_control_column.controls.append(answer_txtfield)
 
 
-        grid_dr_txtf_column.controls.append(ft.Row((ft.IconButton(ft.icons.SAVE, on_click=nn_save),
-                                                    ft.IconButton(ft.icons.DOWNLOAD, on_click=lambda _: fp_p_load.pick_files(allow_multiple=False))
+        grid_draw_control_column.controls.append(ft.Row((ft.IconButton(ft.icons.SAVE, on_click=nn_save),
+                                                    ft.IconButton(ft.icons.DOWNLOAD, on_click=lambda _: filep_load.pick_files(allow_multiple=False))
                                                     )))
 
-        grid_dr_row.controls.append(grid_dr_txtf_column)
-        grid_dr_row.controls.append(grid_dr_main_column)
+        grid_draw_row.controls.append(grid_draw_control_column)
+        grid_draw_row.controls.append(grid_draw_draw_column)
 
         page.add(
             ft.Text("Работа c обученной нейронной сетью", size=20),
-            grid_dr_row,
+            grid_draw_row,
         )
 
-    def f_p_ts_res_e(e: ft.FilePickerResultEvent, layer = layer):
+    def ts_filep_event(e: ft.FilePickerResultEvent, layer = layer):
         layer.__init__(int(nrns_num.value), int(inputs_num.value))
         
         page.clean()
@@ -110,7 +158,7 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
         page.add(
-            page_ttl_2,
+            page_title_2,
             ft.Text("Идет обучение, подождите..."),
         )
         nn.learning(layer, ts.ts_init(e.path), 0.01)
@@ -118,7 +166,7 @@ def main(page: ft.Page):
 
 
 
-    def layer_create(e):
+    def nn_creation(e):
         if not(nrns_num.value and inputs_num.value):
             page.snack_bar = ft.SnackBar(ft.Text("Введите недостающие данные!"))
             page.snack_bar.open = True
@@ -127,11 +175,11 @@ def main(page: ft.Page):
             page.snack_bar.open = True
             page.clean()
             page.update()
-            page.add(page_ttl_2,
-                     ft.Row((txt_p_ts,
-                             btn_p_ts,
+            page.add(page_title_2,
+                     ft.Row((txt_filep_ts,
+                             btn_filep_ts,
                             )),
-                            btn_t_skip
+                            btn_training_skip
                     )
         page.update()
 
@@ -141,44 +189,46 @@ def main(page: ft.Page):
     page.vertical_alignment = ft.MainAxisAlignment.START
     page.window_width = 400
     page.window_height = 400
+    page.theme_mode = ft.ThemeMode("light")
 
     # CONTROLS DEFENITION
 
-    grid_dr_w = ft.TextField(label='Width', width=75, on_change=dr_field, label_style=ft.TextStyle(size=13))
-    grid_dr_h = ft.TextField(label='Height', width=75, on_change=dr_field, label_style=ft.TextStyle(size=13))
+    grid_draw_w = ft.TextField(label='Width', width=75, on_change=draw_canvas, label_style=ft.TextStyle(size=13))
+    grid_draw_h = ft.TextField(label='Height', width=75, on_change=draw_canvas, label_style=ft.TextStyle(size=13))
 
-    grid_dr_txtf_column = ft.Column()
-    grid_dr_row = ft.Row(vertical_alignment=ft.CrossAxisAlignment.START)
-    grid_dr_main_column = ft.Column(spacing=0)
+    grid_draw_control_column = ft.Column()
+    grid_draw_row = ft.Row(vertical_alignment=ft.CrossAxisAlignment.START)
+    grid_draw_draw_column = ft.Column(spacing=0)
     
-    page_ttl_2 = ft.Text("Обучение нейронной сети", size=20)
-    txt_p_ts = ft.Text("Выберите обучающую выборку", size=15)
-    btn_p_ts = ft.TextButton("Обзор...", on_click=lambda _: fp_p_ts.get_directory_path())
+    page_title_2 = ft.Text("Обучение нейронной сети", size=20)
+    txt_filep_ts = ft.Text("Выберите обучающую выборку", size=15)
+    btn_filep_ts = ft.TextButton("Обзор...", on_click=lambda _: filep_ts.get_directory_path())
 
-    page_ttl_1 = ft.Text("Создание нейронной сети", size=20)
+    page_title_1 = ft.Text("Создание нейронной сети", size=20)
     nrns_num_txt = ft.Text("Количество нейронов в слое", size=15)
     nrns_num = ft.TextField(width=75)
     nrns_num_row = ft.Row((nrns_num, nrns_num_txt, ))
     inputs_num_txt = ft.Text("Количество входов в нейронах", size=15)
     inputs_num = ft.TextField(width=75)
     inputs_num_row = ft.Row((inputs_num, inputs_num_txt))
-    btn_l_crte = ft.OutlinedButton("Принять", on_click=layer_create)
-    btn_t_skip = ft.OutlinedButton("Продолжить без обучения", on_click=drawer)
+    btn_layer_crte = ft.OutlinedButton("Принять", on_click=nn_creation)
+    btn_training_skip = ft.OutlinedButton("Продолжить без обучения", on_click=drawer)
+    answer_txtfield = ft.TextField(label='Answer', width=75, label_style=ft.TextStyle(size=13), on_submit=add_learning)
 
-    fp_p_ts = ft.FilePicker(on_result=f_p_ts_res_e)
-    page.overlay.append(fp_p_ts)
+    filep_ts = ft.FilePicker(on_result=ts_filep_event)
+    page.overlay.append(filep_ts)
 
-    fp_p_load = ft.FilePicker(on_result=nn_load)
-    page.overlay.append(fp_p_load)
+    filep_load = ft.FilePicker(on_result=nn_load)
+    page.overlay.append(filep_load)
 
     # MAIN BODY
 
     nrn_crte = ft.Column(
         (
-            page_ttl_1,
+            page_title_1,
             nrns_num_row,
             inputs_num_row,
-            btn_l_crte
+            btn_layer_crte
         ),
     )
 
